@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsNumberString, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsNumberString, IsString } from 'class-validator';
 
 export class CreateTodoDto {
   @IsNotEmpty()
@@ -21,7 +21,7 @@ export class UpdateTodoDto {
 }
 
 export class ParamsWithId {
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  id: string;
+  id: number;
 }

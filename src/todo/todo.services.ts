@@ -1,56 +1,48 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   TodoInterface,
   TodoUpdateInterface,
 } from './interfaces/todo.interface';
-import * as uuid from 'uuid';
+import { Prisma, Todo } from '@prisma/client';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class TodoServices {
   private todos: TodoInterface[] = [];
 
-  getAll(): TodoInterface[] {
-    return this.todos;
+  constructor(private prisma: PrismaService) {}
+
+  getAll(): Promise<Todo[]> {
+    return this.prisma.todo.findMany();
   }
 
-  findOne(index): TodoInterface {
-    const todo = this.todos.find((value) => value.id == index);
-    if (!todo) throw new Error("Doesn't have any todo by this id");
-    return todo
-  }
-
-  create(body): TodoInterface {
-    const newTodo: TodoInterface = {
-      id: uuid.v4(),
-      title: body.title,
-      completed: false,
-      deleted: false,
-    };
-
-    this.todos.push(newTodo);
-    return newTodo;
-  }
-
-  delete(index: string): TodoInterface {
-    const todo = this.findOne(index);
-    this.update(index, {
-      ...todo,
-      deleted: true,
-    });
-    return todo;
-  }
-
-  updateIfExist(index: string, body: TodoUpdateInterface) {
-    const todo = this.findOne(index)
-    this.update(index, { ...todo, ...body });
-    return todo
-  }
-
-  private update(index: string, todo: TodoInterface){
-    this.todos = this.todos.map((obj, key) => {
-      if (obj.id === index) return { ...obj, ...todo };
-      return obj;
+  async create(data: Prisma.TodoCreateInput): Promise<Todo> {
+    return this.prisma.todo.create({
+      data,
     });
   }
 
+  async delete(where: Prisma.TodoWhereUniqueInput): Promise<Todo> {
+    return this.prisma.todo.delete({
+      where,
+    });
+  }
+
+  async findOne(params: { where: Prisma.TodoWhereUniqueInput }) {
+    const { where } = params;
+    return this.prisma.todo.findUnique({
+      where,
+    });
+  }
+
+  async update(params: {
+    where: Prisma.TodoWhereUniqueInput;
+    data: Prisma.TodoUpdateInput;
+  }): Promise<Todo> {
+    const { data, where } = params;
+    return this.prisma.todo.update({
+      data,
+      where,
+    });
+  }
 }

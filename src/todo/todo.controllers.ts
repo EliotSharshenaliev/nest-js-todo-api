@@ -1,52 +1,63 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Req } from "@nestjs/common";
-import { TodoServices } from "./todo.services";
-import { CreateTodoDto, ParamsWithId, UpdateTodoDto } from "./dto/todo.dto";
-import { TodoInterface } from "./interfaces/todo.interface";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Req,
+} from '@nestjs/common';
+import { TodoServices } from './todo.services';
+import { CreateTodoDto, ParamsWithId, UpdateTodoDto } from './dto/todo.dto';
+import { TodoInterface } from './interfaces/todo.interface';
+import { Prisma, Todo } from '@prisma/client';
 
+@Controller('api/v1/')
+export class TodoControllers {
+  constructor(private readonly todoServices: TodoServices) {}
 
-@Controller("api/v1/")
-export class TodoControllers{
-    constructor(private todoServices: TodoServices) {}
+  @Get('todos/')
+  async getTodos() {
+    return await this.todoServices.getAll();
+  }
 
-    @Get("todos/")
-    async getTodos(){
-        return this.todoServices.getAll()
+  @Post('create/')
+  async createTodo(@Body() createTodoDto: CreateTodoDto) {
+    return await this.todoServices.create({ ...createTodoDto });
+  }
+
+  @Put('update/:id')
+  async updateTodos(
+    @Param('id') id: string,
+    @Body() updateTodoDto: UpdateTodoDto,
+  ): Promise<Todo> {
+    try {
+      return await this.todoServices.update({
+        where: { id: Number(id) },
+        data: updateTodoDto,
+      });
+    } catch (e) {
+      const response = {
+        status: HttpStatus.NOT_FOUND,
+        error: 'Todo not found',
+      };
+      throw new HttpException(response, HttpStatus.NOT_FOUND);
     }
+  }
 
-    @Post("create/")
-    async createTodo(@Body() createTodoDto: CreateTodoDto ){
-        return this.todoServices.create(createTodoDto)
+  @Delete('delete/:id')
+  async delete(@Param('id') id: string): Promise<Todo> {
+    try {
+      return await this.todoServices.delete({ id: Number(id) });
+    } catch (e) {
+      const response = {
+        status: HttpStatus.NOT_FOUND,
+        error: 'Todo not found',
+      };
+      throw new HttpException(response, HttpStatus.NOT_FOUND);
     }
-
-    @Put("update/:id")
-    async updateTodos(@Param() updateParams: ParamsWithId, @Body() updateTodoDto: UpdateTodoDto){
-        try {
-            return this.todoServices.updateIfExist(updateParams.id, {
-                title: updateTodoDto.title,
-                completed: updateTodoDto.completed,
-                deleted: updateTodoDto.deleted
-            })
-        }catch (e) {
-            throw new HttpException({
-                status: HttpStatus.BAD_REQUEST,
-                error: e.message,
-            }, HttpStatus.FORBIDDEN, {
-                cause: e
-            });
-        }
-    }
-
-    @Delete("delete/:id")
-    async deleteTodos(@Param() deleteParams: ParamsWithId){
-        try {
-            return this.todoServices.delete(deleteParams.id)
-        }catch (e) {
-            throw new HttpException({
-                status: HttpStatus.BAD_REQUEST,
-                error: e.message,
-            }, HttpStatus.FORBIDDEN, {
-                cause: e
-            });
-        }
-    }
+  }
 }
